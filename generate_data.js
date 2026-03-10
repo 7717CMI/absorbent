@@ -1,10 +1,8 @@
 const fs = require('fs');
 const path = require('path');
 
-// Years: 2021-2033
 const years = [2021, 2022, 2023, 2024, 2025, 2026, 2027, 2028, 2029, 2030, 2031, 2032, 2033];
 
-// Geographies with their region grouping
 const regions = {
   "North America": ["U.S.", "Canada"],
   "Europe": ["U.K.", "Germany", "Italy", "France", "Spain", "Russia", "Rest of Europe"],
@@ -13,94 +11,177 @@ const regions = {
   "Middle East & Africa": ["GCC", "South Africa", "Rest of Middle East & Africa"]
 };
 
-// New segment definitions with market share splits (proportions within each segment type)
+// New SAP market segments
 const segmentTypes = {
-  "By Type": {
-    "Sub-Normothermic Perfusion (20–34°C)": 0.55,
-    "Warm or Normothermic Perfusion (35–37°C)": 0.45
+  "By Product Type": {
+    "Sodium Polyacrylate Based SAP": 0.58,
+    "Polyacrylamide / Copolymer SAP": 0.22,
+    "Cellulose-based SAP": 0.12,
+    "Others (Polyethylene Glycol (PEG) blends, etc.)": 0.08
   },
-  "By Organ Type": {
-    "Liver": 0.35,
-    "Heart": 0.22,
-    "Lung": 0.18,
-    "Kidney": 0.15,
-    "Others (Pancreas, Small bowel / Intestine, Composite Tissues / Limb Perfusion (emerging use cases))": 0.10
+  "By Physical Form": {
+    "Powder": 0.35,
+    "Beads / Granules": 0.30,
+    "Fibers / Flakes": 0.18,
+    "Gel Formulations (Pre-hydrated)": 0.17
   },
-  "Application / Use Case": {
-    "Organ Preservation": 0.30,
-    "Viability Assessment": 0.25,
-    "Physiologic Transport": 0.20,
-    "Reconditioning Marginal Organs": 0.15,
-    "Others (Research Use / Protocol development)": 0.10
+  "By Manufacturing Process": {
+    "Solution Polymerization": 0.20,
+    "Gel Polymerization": 0.35,
+    "Suspension Polymerization": 0.25,
+    "Bulk Polymerization": 0.12,
+    "Others (Surface Cross-Linking Process, etc.)": 0.08
   },
-  "By End User": {
-    "Hospitals & Clinics": 0.40,
-    "Specialty Clinic/Centers": 0.25,
-    "Transplant Centers": 0.25,
-    "Others (Research Institutes/Centers, Organ Procurement Organizations, etc.)": 0.10
+  "By Distribution Channel": {
+    "Direct": 0.55,
+    "Indirect (via Distributors)": 0.45
   }
 };
 
-// Regional base values (USD Million) for 2021 - total market per region
-// Global Normothermic Machine Perfusion market ~$300M in 2021, growing ~12% CAGR
-const regionBaseValues = {
-  "North America": 120,
-  "Europe": 90,
-  "Asia Pacific": 50,
-  "Latin America": 20,
-  "Middle East & Africa": 15
+// Hierarchical segment: By End Use Application
+const endUseApplication = {
+  "Hygiene & Personal Care": {
+    share: 0.45,
+    children: {
+      "Baby Diapers": 0.42,
+      "Adult Incontinence Products": 0.30,
+      "Feminine Hygiene (Sanitary Napkins)": 0.18,
+      "Other Personal Care Products": 0.10
+    }
+  },
+  "Agriculture & Horticulture": {
+    share: 0.15,
+    children: {
+      "Soil Moisture Management": 0.50,
+      "Seed Coating": 0.30,
+      "Turf & Landscaping": 0.20
+    }
+  },
+  "Industrial Applications": {
+    share: 0.18,
+    children: {
+      "Packaging (e.g., food/fragile goods moisture control)": 0.35,
+      "Cable & Wire Filling Gels": 0.35,
+      "Desiccants & Drying Agents": 0.30
+    }
+  },
+  "Medical & Healthcare": {
+    share: 0.10,
+    children: {
+      "Surgical Pads": 0.40,
+      "Wound Dressings": 0.35,
+      "Medical Packaging": 0.25
+    }
+  },
+  "Consumer Goods": {
+    share: 0.07,
+    children: {
+      "Water Absorbent Products (e.g., pet pads)": 0.60,
+      "Spill Control": 0.40
+    }
+  },
+  "Others": {
+    share: 0.05,
+    children: {
+      "Construction (crack control in concrete)": 0.55,
+      "Textiles": 0.45
+    }
+  }
 };
 
-// Country share within region (must sum to ~1.0)
+// Regional base values (USD Million) for 2026 base year - SAP market ~$12B globally
+const regionBaseValues = {
+  "North America": 2800,
+  "Europe": 3200,
+  "Asia Pacific": 4500,
+  "Latin America": 800,
+  "Middle East & Africa": 500
+};
+
 const countryShares = {
   "North America": { "U.S.": 0.82, "Canada": 0.18 },
-  "Europe": { "U.K.": 0.18, "Germany": 0.22, "Italy": 0.12, "France": 0.16, "Spain": 0.10, "Russia": 0.08, "Rest of Europe": 0.14 },
-  "Asia Pacific": { "China": 0.28, "India": 0.12, "Japan": 0.25, "South Korea": 0.12, "ASEAN": 0.10, "Australia": 0.07, "Rest of Asia Pacific": 0.06 },
-  "Latin America": { "Brazil": 0.45, "Argentina": 0.15, "Mexico": 0.25, "Rest of Latin America": 0.15 },
-  "Middle East & Africa": { "GCC": 0.45, "South Africa": 0.25, "Rest of Middle East & Africa": 0.30 }
+  "Europe": { "U.K.": 0.14, "Germany": 0.22, "Italy": 0.10, "France": 0.15, "Spain": 0.08, "Russia": 0.12, "Rest of Europe": 0.19 },
+  "Asia Pacific": { "China": 0.38, "India": 0.18, "Japan": 0.16, "South Korea": 0.10, "ASEAN": 0.08, "Australia": 0.05, "Rest of Asia Pacific": 0.05 },
+  "Latin America": { "Brazil": 0.40, "Argentina": 0.15, "Mexico": 0.30, "Rest of Latin America": 0.15 },
+  "Middle East & Africa": { "GCC": 0.40, "South Africa": 0.25, "Rest of Middle East & Africa": 0.35 }
 };
 
-// Growth rates (CAGR) per region - slightly different for variety
 const regionGrowthRates = {
-  "North America": 0.115,
-  "Europe": 0.108,
-  "Asia Pacific": 0.145,
-  "Latin America": 0.125,
-  "Middle East & Africa": 0.118
+  "North America": 0.058,
+  "Europe": 0.055,
+  "Asia Pacific": 0.078,
+  "Latin America": 0.068,
+  "Middle East & Africa": 0.062
 };
 
-// Segment-specific growth multipliers (relative to regional base CAGR)
+// Segment growth multipliers
 const segmentGrowthMultipliers = {
-  "By Type": {
-    "Sub-Normothermic Perfusion (20–34°C)": 0.95,
-    "Warm or Normothermic Perfusion (35–37°C)": 1.07
+  "By Product Type": {
+    "Sodium Polyacrylate Based SAP": 0.95,
+    "Polyacrylamide / Copolymer SAP": 1.12,
+    "Cellulose-based SAP": 1.18,
+    "Others (Polyethylene Glycol (PEG) blends, etc.)": 0.88
   },
-  "By Organ Type": {
-    "Liver": 1.08,
-    "Heart": 1.05,
-    "Lung": 1.12,
-    "Kidney": 0.95,
-    "Others (Pancreas, Small bowel / Intestine, Composite Tissues / Limb Perfusion (emerging use cases))": 1.20
+  "By Physical Form": {
+    "Powder": 0.92,
+    "Beads / Granules": 1.05,
+    "Fibers / Flakes": 1.02,
+    "Gel Formulations (Pre-hydrated)": 1.15
   },
-  "Application / Use Case": {
-    "Organ Preservation": 0.92,
-    "Viability Assessment": 1.15,
-    "Physiologic Transport": 1.05,
-    "Reconditioning Marginal Organs": 1.18,
-    "Others (Research Use / Protocol development)": 1.10
+  "By Manufacturing Process": {
+    "Solution Polymerization": 0.95,
+    "Gel Polymerization": 1.10,
+    "Suspension Polymerization": 1.02,
+    "Bulk Polymerization": 0.88,
+    "Others (Surface Cross-Linking Process, etc.)": 0.92
   },
-  "By End User": {
-    "Hospitals & Clinics": 0.98,
-    "Specialty Clinic/Centers": 1.10,
-    "Transplant Centers": 1.08,
-    "Others (Research Institutes/Centers, Organ Procurement Organizations, etc.)": 1.05
+  "By Distribution Channel": {
+    "Direct": 0.98,
+    "Indirect (via Distributors)": 1.05
+  },
+  // End use application parents
+  "By End Use Application": {
+    "Hygiene & Personal Care": 0.96,
+    "Agriculture & Horticulture": 1.20,
+    "Industrial Applications": 1.08,
+    "Medical & Healthcare": 1.25,
+    "Consumer Goods": 0.95,
+    "Others": 0.88
+  },
+  // End use application children
+  "Hygiene & Personal Care": {
+    "Baby Diapers": 0.92,
+    "Adult Incontinence Products": 1.15,
+    "Feminine Hygiene (Sanitary Napkins)": 0.98,
+    "Other Personal Care Products": 0.90
+  },
+  "Agriculture & Horticulture": {
+    "Soil Moisture Management": 1.05,
+    "Seed Coating": 0.95,
+    "Turf & Landscaping": 0.92
+  },
+  "Industrial Applications": {
+    "Packaging (e.g., food/fragile goods moisture control)": 1.0,
+    "Cable & Wire Filling Gels": 1.05,
+    "Desiccants & Drying Agents": 0.95
+  },
+  "Medical & Healthcare": {
+    "Surgical Pads": 1.0,
+    "Wound Dressings": 1.08,
+    "Medical Packaging": 0.95
+  },
+  "Consumer Goods": {
+    "Water Absorbent Products (e.g., pet pads)": 1.02,
+    "Spill Control": 0.95
+  },
+  "Others": {
+    "Construction (crack control in concrete)": 1.05,
+    "Textiles": 0.92
   }
 };
 
-// Volume multiplier: units per USD Million (rough: ~500 units per $1M for perfusion devices)
-const volumePerMillionUSD = 480;
+const volumePerMillionUSD = 450;
 
-// Seeded pseudo-random for reproducibility
 let seed = 42;
 function seededRandom() {
   seed = (seed * 16807 + 0) % 2147483647;
@@ -111,20 +192,15 @@ function addNoise(value, noiseLevel = 0.03) {
   return value * (1 + (seededRandom() - 0.5) * 2 * noiseLevel);
 }
 
-function roundTo1(val) {
-  return Math.round(val * 10) / 10;
-}
+function roundTo1(val) { return Math.round(val * 10) / 10; }
+function roundToInt(val) { return Math.round(val); }
 
-function roundToInt(val) {
-  return Math.round(val);
-}
-
-function generateTimeSeries(baseValue, growthRate, roundFn) {
+function generateTimeSeries(baseValue2026, growthRate, roundFn) {
   const series = {};
   for (let i = 0; i < years.length; i++) {
-    const year = years[i];
-    const rawValue = baseValue * Math.pow(1 + growthRate, i);
-    series[year] = roundFn(addNoise(rawValue));
+    const yearOffset = i - 5; // 2026 is index 5
+    const rawValue = baseValue2026 * Math.pow(1 + growthRate, yearOffset);
+    series[years[i]] = roundFn(addNoise(rawValue));
   }
   return series;
 }
@@ -134,49 +210,76 @@ function generateData(isVolume) {
   const roundFn = isVolume ? roundToInt : roundTo1;
   const multiplier = isVolume ? volumePerMillionUSD : 1;
 
-  // Generate data for each region and country
   for (const [regionName, countries] of Object.entries(regions)) {
     const regionBase = regionBaseValues[regionName] * multiplier;
     const regionGrowth = regionGrowthRates[regionName];
 
     // Region-level data
     data[regionName] = {};
-    for (const [segType, segments] of Object.entries(segmentTypes)) {
+
+    // Flat segments
+    for (const [segType, segs] of Object.entries(segmentTypes)) {
       data[regionName][segType] = {};
-      for (const [segName, share] of Object.entries(segments)) {
+      for (const [segName, share] of Object.entries(segs)) {
         const segGrowth = regionGrowth * segmentGrowthMultipliers[segType][segName];
         const segBase = regionBase * share;
         data[regionName][segType][segName] = generateTimeSeries(segBase, segGrowth, roundFn);
       }
     }
 
-    // Add "By Country" for each region
+    // Hierarchical: By End Use Application
+    data[regionName]["By End Use Application"] = {};
+    for (const [parent, config] of Object.entries(endUseApplication)) {
+      const parentBase = regionBase * config.share;
+      const parentGrowth = regionGrowth * segmentGrowthMultipliers["By End Use Application"][parent];
+      data[regionName]["By End Use Application"][parent] = generateTimeSeries(parentBase, parentGrowth, roundFn);
+      for (const [child, childShare] of Object.entries(config.children)) {
+        const childBase = parentBase * childShare;
+        const childGrowth = parentGrowth * segmentGrowthMultipliers[parent][child];
+        data[regionName]["By End Use Application"][child] = generateTimeSeries(childBase, childGrowth, roundFn);
+      }
+    }
+
+    // By Country
     data[regionName]["By Country"] = {};
     for (const country of countries) {
       const cShare = countryShares[regionName][country];
-      // Use a slight variation of region growth per country
-      const countryGrowthVariation = 1 + (seededRandom() - 0.5) * 0.06;
-      const countryBase = regionBase * cShare;
-      const countryGrowth = regionGrowth * countryGrowthVariation;
-      data[regionName]["By Country"][country] = generateTimeSeries(countryBase, countryGrowth, roundFn);
+      const countryGrowthVar = 1 + (seededRandom() - 0.5) * 0.06;
+      data[regionName]["By Country"][country] = generateTimeSeries(regionBase * cShare, regionGrowth * countryGrowthVar, roundFn);
     }
 
     // Country-level data
     for (const country of countries) {
       const cShare = countryShares[regionName][country];
       const countryBase = regionBase * cShare;
-      const countryGrowthVariation = 1 + (seededRandom() - 0.5) * 0.04;
-      const countryGrowth = regionGrowth * countryGrowthVariation;
+      const countryGrowthVar = 1 + (seededRandom() - 0.5) * 0.04;
+      const countryGrowth = regionGrowth * countryGrowthVar;
 
       data[country] = {};
-      for (const [segType, segments] of Object.entries(segmentTypes)) {
+
+      // Flat segments for country
+      for (const [segType, segs] of Object.entries(segmentTypes)) {
         data[country][segType] = {};
-        for (const [segName, share] of Object.entries(segments)) {
+        for (const [segName, share] of Object.entries(segs)) {
           const segGrowth = countryGrowth * segmentGrowthMultipliers[segType][segName];
           const segBase = countryBase * share;
-          // Add slight country-specific variation to segment share
-          const shareVariation = 1 + (seededRandom() - 0.5) * 0.1;
-          data[country][segType][segName] = generateTimeSeries(segBase * shareVariation, segGrowth, roundFn);
+          const shareVar = 1 + (seededRandom() - 0.5) * 0.1;
+          data[country][segType][segName] = generateTimeSeries(segBase * shareVar, segGrowth, roundFn);
+        }
+      }
+
+      // Hierarchical: By End Use Application for country
+      data[country]["By End Use Application"] = {};
+      for (const [parent, config] of Object.entries(endUseApplication)) {
+        const parentBase = countryBase * config.share;
+        const parentGrowth = countryGrowth * segmentGrowthMultipliers["By End Use Application"][parent];
+        const shareVar = 1 + (seededRandom() - 0.5) * 0.1;
+        data[country]["By End Use Application"][parent] = generateTimeSeries(parentBase * shareVar, parentGrowth, roundFn);
+        for (const [child, childShare] of Object.entries(config.children)) {
+          const childBase = parentBase * shareVar * childShare;
+          const childGrowth = parentGrowth * segmentGrowthMultipliers[parent][child];
+          const childVar = 1 + (seededRandom() - 0.5) * 0.08;
+          data[country]["By End Use Application"][child] = generateTimeSeries(childBase * childVar, childGrowth, roundFn);
         }
       }
     }
@@ -185,19 +288,62 @@ function generateData(isVolume) {
   return data;
 }
 
-// Generate both datasets
+// Generate data
 seed = 42;
 const valueData = generateData(false);
 seed = 7777;
 const volumeData = generateData(true);
 
+// Generate segmentation_analysis.json
+const segAnalysis = {
+  "Global": {
+    "By Product Type": {},
+    "By Physical Form": {},
+    "By End Use Application": {},
+    "By Manufacturing Process": {},
+    "By Distribution Channel": {},
+    "By Region": {}
+  }
+};
+
+for (const item of Object.keys(segmentTypes["By Product Type"])) {
+  segAnalysis["Global"]["By Product Type"][item] = {};
+}
+for (const item of Object.keys(segmentTypes["By Physical Form"])) {
+  segAnalysis["Global"]["By Physical Form"][item] = {};
+}
+for (const item of Object.keys(segmentTypes["By Manufacturing Process"])) {
+  segAnalysis["Global"]["By Manufacturing Process"][item] = {};
+}
+for (const item of Object.keys(segmentTypes["By Distribution Channel"])) {
+  segAnalysis["Global"]["By Distribution Channel"][item] = {};
+}
+
+// Hierarchical: By End Use Application
+for (const [parent, config] of Object.entries(endUseApplication)) {
+  segAnalysis["Global"]["By End Use Application"][parent] = {};
+  for (const child of Object.keys(config.children)) {
+    segAnalysis["Global"]["By End Use Application"][parent][child] = {};
+  }
+}
+
+// By Region
+for (const [region, countries] of Object.entries(regions)) {
+  segAnalysis["Global"]["By Region"][region] = {};
+  for (const country of countries) {
+    segAnalysis["Global"]["By Region"][region][country] = {};
+  }
+}
+
 // Write files
 const outDir = path.join(__dirname, 'public', 'data');
+fs.writeFileSync(path.join(outDir, 'segmentation_analysis.json'), JSON.stringify(segAnalysis, null, 2));
 fs.writeFileSync(path.join(outDir, 'value.json'), JSON.stringify(valueData, null, 2));
 fs.writeFileSync(path.join(outDir, 'volume.json'), JSON.stringify(volumeData, null, 2));
 
-console.log('Generated value.json and volume.json successfully');
+console.log('Generated all data files successfully!');
 console.log('Value geographies:', Object.keys(valueData).length);
-console.log('Volume geographies:', Object.keys(volumeData).length);
 console.log('Segment types:', Object.keys(valueData['North America']));
-console.log('Sample - North America, By Type:', JSON.stringify(valueData['North America']['By Type'], null, 2));
+console.log('End Use Application segments:', Object.keys(valueData['North America']['By End Use Application']));
+console.log('\nSegmentation analysis:');
+console.log(JSON.stringify(segAnalysis, null, 2));

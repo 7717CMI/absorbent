@@ -1,28 +1,58 @@
 {
   "Global": {
-    "By Type": {
-      "Sub-Normothermic Perfusion (20–34°C)": {},
-      "Warm or Normothermic Perfusion (35–37°C)": {}
+    "By Product Type": {
+      "Sodium Polyacrylate Based SAP": {},
+      "Polyacrylamide / Copolymer SAP": {},
+      "Cellulose-based SAP": {},
+      "Others (Polyethylene Glycol (PEG) blends, etc.)": {}
     },
-    "By Organ Type": {
-      "Liver": {},
-      "Heart": {},
-      "Lung": {},
-      "Kidney": {},
-      "Others (Pancreas, Small bowel / Intestine, Composite Tissues / Limb Perfusion (emerging use cases))": {}
+    "By Physical Form": {
+      "Powder": {},
+      "Beads / Granules": {},
+      "Fibers / Flakes": {},
+      "Gel Formulations (Pre-hydrated)": {}
     },
-    "Application / Use Case": {
-      "Organ Preservation": {},
-      "Viability Assessment": {},
-      "Physiologic Transport": {},
-      "Reconditioning Marginal Organs": {},
-      "Others (Research Use / Protocol development)": {}
+    "By End Use Application": {
+      "Hygiene & Personal Care": {
+        "Baby Diapers": {},
+        "Adult Incontinence Products": {},
+        "Feminine Hygiene (Sanitary Napkins)": {},
+        "Other Personal Care Products": {}
+      },
+      "Agriculture & Horticulture": {
+        "Soil Moisture Management": {},
+        "Seed Coating": {},
+        "Turf & Landscaping": {}
+      },
+      "Industrial Applications": {
+        "Packaging (e.g., food/fragile goods moisture control)": {},
+        "Cable & Wire Filling Gels": {},
+        "Desiccants & Drying Agents": {}
+      },
+      "Medical & Healthcare": {
+        "Surgical Pads": {},
+        "Wound Dressings": {},
+        "Medical Packaging": {}
+      },
+      "Consumer Goods": {
+        "Water Absorbent Products (e.g., pet pads)": {},
+        "Spill Control": {}
+      },
+      "Others": {
+        "Construction (crack control in concrete)": {},
+        "Textiles": {}
+      }
     },
-    "By End User": {
-      "Hospitals & Clinics": {},
-      "Specialty Clinic/Centers": {},
-      "Transplant Centers": {},
-      "Others (Research Institutes/Centers, Organ Procurement Organizations, etc.)": {}
+    "By Manufacturing Process": {
+      "Solution Polymerization": {},
+      "Gel Polymerization": {},
+      "Suspension Polymerization": {},
+      "Bulk Polymerization": {},
+      "Others (Surface Cross-Linking Process, etc.)": {}
+    },
+    "By Distribution Channel": {
+      "Direct": {},
+      "Indirect (via Distributors)": {}
     },
     "By Region": {
       "North America": {
